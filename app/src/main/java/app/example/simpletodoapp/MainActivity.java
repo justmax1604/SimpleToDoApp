@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -21,11 +20,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
-
-    public static final String KEY_ITEM_TEXT = "item_text";
-    public static final String KEY_ITEM_POSITION = "item_position";
-    public static final int EDIT_TEXT_CODE = 20;
+public class MainActivity extends AppCompatActivity implements EditDialog.EditItemDialogListener {
 
     List<String> items;
 
@@ -63,13 +58,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClicked(int position) {
                 Log.d("Main Activity", "Single click");
-                // create the new activity
-                Intent i = new Intent(MainActivity.this, EditActivity.class);
-                // pass the data being edited
-                i.putExtra(KEY_ITEM_TEXT,items.get(position));
-                i.putExtra(KEY_ITEM_POSITION,position);
-                // display the activity
-                startActivityForResult(i, EDIT_TEXT_CODE);
+                EditDialog dialogFragment = new EditDialog();
+                Bundle bundle = new Bundle();
+                bundle.putString("item_text",items.get(position));
+                bundle.putInt("item_position",position);
+                dialogFragment.setArguments(bundle);
+                dialogFragment.show(getSupportFragmentManager(),"Item Dialog");
             }
         };
         itemsAdapter = new ItemsAdapter(items, onLongClickListener,onClickListener);
@@ -89,27 +83,6 @@ public class MainActivity extends AppCompatActivity {
                 saveItems();
             }
         });
-    }
-    // to handle the result of edit activity
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (resultCode == RESULT_OK && requestCode == EDIT_TEXT_CODE){
-            //retrieve the updated text
-            String itemText = data.getStringExtra(KEY_ITEM_TEXT);
-            //extract the original position of the edit item from the position key
-            int position = data.getExtras().getInt(KEY_ITEM_POSITION);
-            //update the model at the right position with new item text
-            items.set(position,itemText);
-            //notify the adapter
-            itemsAdapter.notifyItemChanged(position);
-            //persist the changes
-            saveItems();
-            Toast.makeText(getApplicationContext(), "Item updated successfully", Toast.LENGTH_SHORT ).show();
-
-
-        } else  {
-            Log.w("MainActivity","Unknown call to onActivityResult");
-        };
     }
 
     private File getDataFile() {
@@ -135,5 +108,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
+    // to handle the result of edit activity
+    @Override
+    public void onFinishEditDialog(String item_txt,int position) {
+        //update the model at the right position with new item text
+        items.set(position,item_txt);
+        //notify the adapter
+        itemsAdapter.notifyItemChanged(position);
+        //persist the changes
+        saveItems();
+        Toast.makeText(getApplicationContext(), "Item updated successfully", Toast.LENGTH_SHORT ).show();
+    }
 }
